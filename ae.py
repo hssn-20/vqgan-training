@@ -12,12 +12,10 @@ from torch import Tensor, nn
 def swish(x: Tensor) -> Tensor:
     return x * torch.sigmoid(x)
 
-
 class AttnBlock(nn.Module):
     def __init__(self, in_channels: int):
         super().__init__()
         self.in_channels = in_channels
-
         self.head_dim = 64
         self.num_heads = in_channels // self.head_dim
         self.norm = nn.GroupNorm(
@@ -27,27 +25,26 @@ class AttnBlock(nn.Module):
         self.proj_out = nn.Conv1d(in_channels, in_channels, kernel_size=1, bias=False)
         nn.init.normal_(self.proj_out.weight, std=0.2 / math.sqrt(in_channels))
 
-    def attention(self, h_: Tensor) -> Tensor:
+    def attention(self, h_: torch.Tensor) -> torch.Tensor:
         h_ = self.norm(h_)
         qkv = self.qkv(h_)
         q, k, v = qkv.chunk(3, dim=1)
-        b, c, h, w = q.shape
+        b, c, l = q.shape
         q = rearrange(
-            q, "b (h d) x y -> b h (x y) d", h=self.num_heads, d=self.head_dim
+            q, "b (h d) l -> b h l d", h=self.num_heads, d=self.head_dim
         )
         k = rearrange(
-            k, "b (h d) x y -> b h (x y) d", h=self.num_heads, d=self.head_dim
+            k, "b (h d) l -> b h l d", h=self.num_heads, d=self.head_dim
         )
         v = rearrange(
-            v, "b (h d) x y -> b h (x y) d", h=self.num_heads, d=self.head_dim
+            v, "b (h d) l -> b h l d", h=self.num_heads, d=self.head_dim
         )
         h_ = F.scaled_dot_product_attention(q, k, v)
-        h_ = rearrange(h_, "b h (x y) d -> b (h d) x y", x=h, y=w)
+        h_ = rearrange(h_, "b h l d -> b (h d) l")
         return h_
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x + self.proj_out(self.attention(x))
-
 
 class ResnetBlock(nn.Module):
     def __init__(self, in_channels: int, out_channels: int):
