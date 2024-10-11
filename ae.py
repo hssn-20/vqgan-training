@@ -90,7 +90,7 @@ class Downsample(nn.Module):
         )
 
     def forward(self, x: Tensor):
-        pad = (0, 1, 0, 1)
+        pad = (0, 0, 0, 0)
         x = nn.functional.pad(x, pad, mode="constant", value=0)
         x = self.conv(x)
         return x
