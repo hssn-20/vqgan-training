@@ -23,8 +23,8 @@ class AttnBlock(nn.Module):
         self.norm = nn.GroupNorm(
             num_groups=32, num_channels=in_channels, eps=1e-6, affine=True
         )
-        self.qkv = nn.Conv2d(in_channels, in_channels * 3, kernel_size=1, bias=False)
-        self.proj_out = nn.Conv2d(in_channels, in_channels, kernel_size=1, bias=False)
+        self.qkv = nn.Conv1d(in_channels, in_channels * 3, kernel_size=1, bias=False)
+        self.proj_out = nn.Conv1d(in_channels, in_channels, kernel_size=1, bias=False)
         nn.init.normal_(self.proj_out.weight, std=0.2 / math.sqrt(in_channels))
 
     def attention(self, h_: Tensor) -> Tensor:
@@ -58,17 +58,17 @@ class ResnetBlock(nn.Module):
         self.norm1 = nn.GroupNorm(
             num_groups=32, num_channels=in_channels, eps=1e-6, affine=True
         )
-        self.conv1 = nn.Conv2d(
+        self.conv1 = nn.Conv1d(
             in_channels, out_channels, kernel_size=3, stride=1, padding=1
         )
         self.norm2 = nn.GroupNorm(
             num_groups=32, num_channels=out_channels, eps=1e-6, affine=True
         )
-        self.conv2 = nn.Conv2d(
+        self.conv2 = nn.Conv1d(
             out_channels, out_channels, kernel_size=3, stride=1, padding=1
         )
         if self.in_channels != self.out_channels:
-            self.nin_shortcut = nn.Conv2d(
+            self.nin_shortcut = nn.Conv1d(
                 in_channels, out_channels, kernel_size=1, stride=1, padding=0
             )
 
@@ -88,7 +88,7 @@ class ResnetBlock(nn.Module):
 class Downsample(nn.Module):
     def __init__(self, in_channels: int):
         super().__init__()
-        self.conv = nn.Conv2d(
+        self.conv = nn.Conv1d(
             in_channels, in_channels, kernel_size=3, stride=2, padding=0
         )
 
@@ -102,7 +102,7 @@ class Downsample(nn.Module):
 class Upsample(nn.Module):
     def __init__(self, in_channels: int):
         super().__init__()
-        self.conv = nn.Conv2d(
+        self.conv = nn.Conv1d(
             in_channels, in_channels, kernel_size=3, stride=1, padding=1
         )
 
@@ -128,7 +128,7 @@ class Encoder(nn.Module):
         self.num_res_blocks = num_res_blocks
         self.resolution = resolution
         self.in_channels = in_channels
-        self.conv_in = nn.Conv2d(
+        self.conv_in = nn.Conv1d(
             in_channels, self.ch, kernel_size=3, stride=1, padding=1
         )
         curr_res = resolution
@@ -158,7 +158,7 @@ class Encoder(nn.Module):
         self.norm_out = nn.GroupNorm(
             num_groups=32, num_channels=block_in, eps=1e-6, affine=True
         )
-        self.conv_out = nn.Conv2d(
+        self.conv_out = nn.Conv1d(
             block_in, z_channels, kernel_size=3, stride=1, padding=1
         )
 
@@ -201,7 +201,7 @@ class Decoder(nn.Module):
         block_in = ch * ch_mult[self.num_resolutions - 1]
         curr_res = resolution // 2 ** (self.num_resolutions - 1)
         self.z_shape = (1, z_channels, curr_res, curr_res)
-        self.conv_in = nn.Conv2d(
+        self.conv_in = nn.Conv1d(
             z_channels, block_in, kernel_size=3, stride=1, padding=1
         )
         self.mid = nn.Module()
@@ -226,7 +226,7 @@ class Decoder(nn.Module):
         self.norm_out = nn.GroupNorm(
             num_groups=32, num_channels=block_in, eps=1e-6, affine=True
         )
-        self.conv_out = nn.Conv2d(block_in, out_ch, kernel_size=3, stride=1, padding=1)
+        self.conv_out = nn.Conv1d(block_in, out_ch, kernel_size=3, stride=1, padding=1)
 
     def forward(self, z: Tensor) -> Tensor:
         h = self.conv_in(z)
